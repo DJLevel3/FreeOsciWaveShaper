@@ -1,6 +1,6 @@
 @echo off
 
-REM - CALL "$(SolutionDir)scripts\postbuild-win.bat" "$(TargetExt)" "$(BINARY_NAME)" "$(Platform)" "$(COPY_VST2)" "$(TargetPath)" "$(VST2_32_PATH)" "$(VST2_64_PATH)" "$(VST3_32_PATH)" "$(VST3_64_PATH)" "$(AAX_32_PATH)" "$(AAX_64_PATH)" "$(BUILD_DIR)" "$(VST_ICON)" "$(AAX_ICON)" "
+REM - CALL "$(SolutionDir)scripts\postbuild-win.bat" "$(TargetExt)" "$(BINARY_NAME)" "$(Platform)" "$(COPY_VST2)" "$(TargetPath)" "$(VST2_32_PATH)" "$(VST2_64_PATH)" "$(VST3_32_PATH)" "$(VST3_64_PATH)" "$(AAX_32_PATH)" "$(AAX_64_PATH)" "$(BUILD_DIR)" "$(VST_ICON)" "$(AAX_ICON)" "$(SolutionDir)" "
 REM $(CREATE_BUNDLE_SCRIPT)"
 
 set FORMAT=%1
@@ -18,11 +18,13 @@ shift
 shift
 shift 
 shift
-set AAX_32_PATH=%4
-set AAX_64_PATH=%5
-set BUILD_DIR=%6
-set VST_ICON=%7
-set AAX_ICON=%8
+shift
+set AAX_32_PATH=%3
+set AAX_64_PATH=%4
+set BUILD_DIR=%5
+set VST_ICON=%6
+set AAX_ICON=%7
+set SOLUTION_DIR=%8
 set CREATE_BUNDLE_SCRIPT=%9
 
 echo POSTBUILD SCRIPT VARIABLES -----------------------------------------------------
@@ -106,6 +108,8 @@ if %PLATFORM% == "x64" (
     echo copying 64bit binary to VST3 BUNDLE ...
     call %CREATE_BUNDLE_SCRIPT% %BUILD_DIR%\%NAME%.vst3 %VST_ICON% %FORMAT%
     copy /y %BUILT_BINARY% %BUILD_DIR%\%NAME%.vst3\Contents\x86_64-win
+	echo copying 64bit binary to project vst3 folder...
+	copy /y %BUILT_BINARY% %SOLUTION_DIR%\vst3\%NAME%_64.vst3
     if exist %VST3_64_PATH% (
       echo copying VST3 bundle to 64bit VST3 Plugins folder ...
       call %CREATE_BUNDLE_SCRIPT% %VST3_64_PATH%\%NAME%.vst3 %VST_ICON% %FORMAT%
