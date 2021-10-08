@@ -26,6 +26,8 @@ private:
   double TransformRight(double input);
   double ProcessSample(double input, int channel, bool swap);
   double ProcessSample(double input, int channel, bool swap, double fade);
+  double ProcessSample(double input1, double input2, int channel, bool swap);
+  double ProcessSample(double input1, double input2, int channel, bool swap, double fade);
 public:
   FOWS(const InstanceInfo& info);
   float func[100][3] = { {-1.0f,  1.0f,  0.0f},
