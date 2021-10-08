@@ -7,7 +7,9 @@ const int kNumPresets = 1;
 enum EParams
 {
   kGain = 0,
-  kFade = 100,
+  kGainIn = 1,
+  kFade = 2,
+  kInverted,
   kSwapped,
   kNumParams
 };
@@ -31,8 +33,9 @@ public:
                          { 0.0f, -1.0f,  0.0f},
                          { 0.5f,  0.0f, -1.0f},
                          { 1.0f,  1.0f,  0.0f} };
-  int funcLen = 5;
+  int funcLen;
   WDL_String currentFunc;
+  const char* defaultFunc = "diamond";
 
 #if IPLUG_DSP // http://bit.ly/2S64BDd
   void ProcessBlock(sample** inputs, sample** outputs, int nFrames) override;

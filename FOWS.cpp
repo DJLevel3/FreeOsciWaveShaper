@@ -2,16 +2,17 @@
 #include "IPlug_include_in_plug_src.h"
 #include "IControls.h"
 #include <fstream>
+#include <cstdlib>
 
 void FOWS::ReadFunction(char* name) {
   float ref = 0;
-  char* input = (char*)&ref;
-  std::ifstream file(name, std::ios::binary);
+  std::ifstream file(name);
   int i = 0;
   for (i = 0; i < 100 && !file.eof(); i ++) {
     for (int j = 0; j < 3; j++) {
-      file.read(input, 4);
+      file >> ref;
       func[i][j] = ref;
+      ref = 0;
     }
   }
   funcLen = i;
@@ -34,7 +35,8 @@ int FOWS::FindPlace(double input) {
 }
 
 double FOWS::TransformLeft(double input) {
-  int index1 = FindPlace(input), index2 = index1 + 1;
+  int index1 = FindPlace(input);
+  int index2 = index1 + 1;
   double output = input - func[index1][0];
   output /= (double)func[index2][0] - func[index1][0];
   output *= (double)func[index2][1] - func[index1][1];
@@ -43,7 +45,8 @@ double FOWS::TransformLeft(double input) {
 }
 
 double FOWS::TransformRight(double input) {
-  int index1 = FindPlace(input), index2 = index1 + 1;
+  int index1 = FindPlace(input);
+  int index2 = index1 + 1;
   double output = input - func[index1][0];
   output /= (double)func[index2][0] - func[index1][0];
   output *= (double)func[index2][2] - func[index1][2];
@@ -63,17 +66,20 @@ double FOWS::ProcessSample(double input, int channel, bool swap) {
 }
 double FOWS::ProcessSample(double input, int channel, bool swap, double fade) {
   double store = ProcessSample(input, channel, swap);
-  store = (fade * store) + (input * (1 - store));
+  store = (fade * store) + ((1 - fade) * input);
   return store;
 }
 
 FOWS::FOWS(const InstanceInfo& info)
   : Plugin(info, MakeConfig(kNumParams, kNumPresets))
 {
-  currentFunc.Set("Diamond");
+  for (int i = 1; i < 100 && func[i][0] > func[i - 1][0]; i++) funcLen = i;
+  currentFunc.Set(defaultFunc);
 
-  GetParam(kGain)->InitDouble("Output Gain", 0., 0., 100.0, 0.01, "%");
+  GetParam(kGain)->InitDouble("Output Gain", 100., 0., 100.0, 0.01, "%");
+  GetParam(kGainIn)->InitDouble("Input Gain", 100., 0., 1000.0, 0.1, "%");
   GetParam(kFade)->InitDouble("Fade", 100.0, 0., 100.0, 0.01, "%");
+  GetParam(kInverted)->InitBool("Flip Input", true, "", IParam::kFlagsNone, "", "Invert", "Norm");
   GetParam(kSwapped)->InitBool("Swap L/R", true, "", IParam::kFlagsNone, "", "Swap", "Norm");
 
 #if IPLUG_EDITOR // http://bit.ly/2S64BDd
@@ -105,22 +111,25 @@ FOWS::FOWS(const InstanceInfo& info)
 
     const IRECT b = pGraphics->GetBounds();
     pGraphics->AttachControl(new ITextControl(b.GetMidVPadded(50), "FreeOsciWaveShaper", IText(50)));
-    pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetVShifted(-100).GetHShifted(50), kGain));
-    pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetVShifted(-100).GetHShifted(-50), kFade));
+    pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetVShifted(-100).GetHShifted(100), kGain));
+    pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetVShifted(-100).GetHShifted(0), kFade));
+    pGraphics->AttachControl(new IVKnobControl(b.GetCentredInside(100).GetVShifted(-100).GetHShifted(-100), kGainIn));
+    pGraphics->AttachControl(new IVSlideSwitchControl(b.GetCentredInside(100).SubRectHorizontal(2, 0).GetVShifted(100), kInverted, "Invert",
+      style.WithValueText(IText(12.f, DEFAULT_TEXT_FGCOLOR, "Roboto-Regular", EAlign::Center)), true, EDirection::Vertical));
     pGraphics->AttachControl(new IVSlideSwitchControl(b.GetCentredInside(100).SubRectHorizontal(2, 1).GetVShifted(100), kSwapped, "Swap L/R",
       style.WithValueText(IText(12.f, DEFAULT_TEXT_FGCOLOR, "Roboto-Regular", EAlign::Center)), true, EDirection::Vertical));
 
-    auto promptFunction = [&](IControl* pCaller) {
+    auto promptFunction = [this,pGraphics](IControl* pCaller) {
       WDL_String fileName;
       WDL_String path;
-      pGraphics->PromptForFile(fileName, path, EFileAction::Open, "wsf");
+      pGraphics->PromptForFile(fileName, path, EFileAction::Open, "shp");
 
       if (fileName.GetLength()) {
         ReadFunction(fileName.Get());
       }
     };
 
-    //pGraphics->AttachControl(new IVButtonControl(b.GetCentredInside(100).SubRectVertical(4, 1).GetVShifted(200), SplashClickActionFunc, "Choose Function...", style))->SetAnimationEndActionFunction(promptFunction);
+    pGraphics->AttachControl(new IVButtonControl(b.GetCentredInside(100).SubRectVertical(4, 1).GetVShifted(200), SplashClickActionFunc, "Choose Function...", style))->SetAnimationEndActionFunction(promptFunction);
   };
 #endif
 }
@@ -128,9 +137,11 @@ FOWS::FOWS(const InstanceInfo& info)
 #if IPLUG_DSP
 void FOWS::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
 {
-  const double gain = GetParam(kGain)->Value() / 100.;
+  const double gain = GetParam(kGainIn)->Value() / 100.;
   const double fade = GetParam(kFade)->Value() / 100.;
+  const double gainOut = GetParam(kGain)->Value() / 100;
   const bool swap = GetParam(kSwapped)->Bool();
+  const bool invert = GetParam(kInverted)->Bool();
   const int nChans = NOutChansConnected();
   const int nInputs = NInChansConnected();
   bool idle = false;
@@ -138,12 +149,12 @@ void FOWS::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   for (int s = 0; s < nFrames; s++) {
     if (nInputs == 1 && nChans == 2 && nFrames > 0) {
       for (int c = 0; c < 2; c++) {
-        outputs[c][s] = gain * ProcessSample(inputs[0][s], c, swap, fade);
+        outputs[c][s] = gainOut * ProcessSample(inputs[0][s] * (invert ? gain : (-1 * gain)), c, swap, fade);
       }
     }
     else if (nInputs == 2 && nChans == 2 && nFrames > 0) {
       for (int c = 0; c < 2; c++) {
-        outputs[c][s] = gain * ProcessSample((inputs[0][s] + inputs[1][s])/2, c, swap, fade);
+        outputs[c][s] = gainOut * ProcessSample((inputs[0][s] + inputs[1][s]) * (invert ? gain : (-1 * gain)) / 2, c, swap, fade);
       }
     }
   }
