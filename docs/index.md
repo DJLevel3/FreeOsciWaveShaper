@@ -32,4 +32,4 @@ Possible future additions:
 - True instant jumps between points
 - More samples
 
-Note: The free DAW [lmms.io](LMMS) doesn't currently support VST3, so you'll have to use it in [https://kushview.net/element/](Element)
+Note: The free DAW [LMMS](lmms.io) doesn't currently support VST3, so you'll have to use it in [Element](https://kushview.net/element/)
