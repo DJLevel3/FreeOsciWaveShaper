@@ -26,6 +26,7 @@ SHP Specifications (not final):
 - Samples that fall between 2 groups will be linearly interpolated between the coordinates.
 - Inputs MUST be in ascending order as a binary search is used to find the groups above and below a sample, and a binary search expects a sorted list.
 - Inputs outside the bounds of the list are not guaranteed to work, so make sure your first and last values are -1 and 1 respectively!
+
 Possible future additions:
 - Per-point interpolation modes
 - True instant jumps between points

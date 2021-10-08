@@ -1,8 +1,23 @@
-#FreeOsciWaveShaper
+# FreeOsciWaveShaper
 A free, open source waveshaper VST for making oscilloscope music on a budget!
 
-
-**WARNING: DO NOT uncomment line 123 in FOWS.cpp, it will render the file selector button correctly but clicking it causes an access violation and crashes both the VST and the host.**
 ----------
-At the moment the only way to get a waveshaper function in is by manually entering the values in the float array func in FOWS.h.  
-The format of the array is {input, left, right} where all values are between -1 and 1 and outputs are interpolated linearly between points.
+
+If you want to try the plugin, just move the VST from vst3/ to your VST3 folder, open it in your DAW of choice, and select a waveshaper shape (.shp) file from test/ to begin!
+
+----------
+
+SHP Specifications (not final):
+- Formatted as ASCII text files
+- SHP files contain up to 100 groups of three decimal numbers (up to 300 individual numbers) between -1 and 1, separated by spaces or newlines.
+- In each group, the first number represents the input sample, the second represents the X coordinate, and the third represents the Y coordinate.
+- Samples that fall between 2 groups will be linearly interpolated between the coordinates.
+- Inputs MUST be in ascending order as a binary search is used to find the groups above and below a sample, and a binary search expects a sorted list.
+- Inputs outside the bounds of the list are not guaranteed to work, so make sure your first and last values are -1 and 1 respectively!  
+
+Possible future additions:
+- Per-point interpolation modes
+- True instant jumps between points
+- More samples
+
+Note: The free DAW [lmms.io](LMMS) doesn't currently support VST3, so you'll have to use it in [https://kushview.net/element/](Element)
