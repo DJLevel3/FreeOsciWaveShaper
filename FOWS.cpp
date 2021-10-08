@@ -69,6 +69,14 @@ double FOWS::ProcessSample(double input, int channel, bool swap, double fade) {
   store = (fade * store) + ((1 - fade) * input);
   return store;
 }
+double FOWS::ProcessSample(double input1, double input2, int channel, bool swap) {
+  return ProcessSample((input1 + input2) / 2, channel, swap);
+}
+double FOWS::ProcessSample(double input1, double input2, int channel, bool swap, double fade) {
+  double store = ProcessSample((input1 + input2)/2, channel, swap);
+  store = (fade * store) + ((1 - fade) * ((channel == 0) ? input1 : input2));
+  return store;
+}
 
 FOWS::FOWS(const InstanceInfo& info)
   : Plugin(info, MakeConfig(kNumParams, kNumPresets))
@@ -144,7 +152,6 @@ void FOWS::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
   const bool invert = GetParam(kInverted)->Bool();
   const int nChans = NOutChansConnected();
   const int nInputs = NInChansConnected();
-  bool idle = false;
 
   for (int s = 0; s < nFrames; s++) {
     if (nInputs == 1 && nChans == 2 && nFrames > 0) {
@@ -154,7 +161,7 @@ void FOWS::ProcessBlock(sample** inputs, sample** outputs, int nFrames)
     }
     else if (nInputs == 2 && nChans == 2 && nFrames > 0) {
       for (int c = 0; c < 2; c++) {
-        outputs[c][s] = gainOut * ProcessSample((inputs[0][s] + inputs[1][s]) * (invert ? gain : (-1 * gain)) / 2, c, swap, fade);
+        outputs[c][s] = gainOut* ProcessSample(inputs[0][s] * (invert ? gain : (-1 * gain)), inputs[1][s] * (invert ? gain : (-1 * gain)), c, swap, fade);
       }
     }
   }
