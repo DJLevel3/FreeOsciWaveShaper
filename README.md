@@ -1,3 +1,10 @@
+# THIS PLUGIN IS OUTDATED!
+I made lots of bad design decisions in this plugin, including my idea of using .shp for the shapes instead of simple .wav files. This was, in hindsight, not a great idea at all. So in the new one, [WavShaper](https://github.com/DJLevel3/WavShaper), I decided to use .wav files instead! It's not done yet, but I'm working on presets, effects, and other really nice features that should have been in FOWS from the start.
+
+The original README is below.
+
+----------
+
 # FreeOsciWaveShaper
 A free, open source waveshaper VST for making oscilloscope music on a budget!
 
